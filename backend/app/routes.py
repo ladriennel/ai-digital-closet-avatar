@@ -1,6 +1,9 @@
 from flask import Blueprint, jsonify, request
 import os
 from PIL import Image
+from models import ClothingClassifier
+from database import add_clothing_items, get_all_clothes, get_clothes_by_category
+
 
 bp = Blueprint('main', __name__)
 
@@ -27,11 +30,21 @@ def upload_file():
         # check file res
         img = Image.open(file)
         width, height = img.size
-        if width >= 512 and height >= 512:
-            file.save(os.path.join('uploads', file.filename))
-            return jsonify({'message': 'File uploaded successfully'})
-        else:
-            return jsonify({'error': ' image resolution has to be greater than 512x512'})
+        if width < 512 and height < 512:
+            return jsonify({'error': 'Bad Resolution'})
+        try:
+            detected_items = ClothingClassifier.process_image(img)
+            saved_items = add_clothing_items(detected_items)
+
+            return jsonify({
+            'success': True,
+            'message': 'Items saved successfully',
+            'items': saved_items
+            })
+        
+        except Exception as e:
+                return jsonify({'error': f'Error processing image: {str(e)}'})            
+
     return jsonify({'error': 'Invalid file type'})
 
 
