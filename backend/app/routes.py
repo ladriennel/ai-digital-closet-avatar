@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 import os
-import PIL
+from PIL import Image
 
 bp = Blueprint('main', __name__)
 
@@ -25,7 +25,7 @@ def upload_file():
         return jsonify({'error': 'No selected file'})
     if file and allowed_file(file.filename):
         # check file res
-        img = PIL.Image.open(file)
+        img = Image.open(file)
         width, height = img.size
         if width >= 512 and height >= 512:
             file.save(os.path.join('uploads', file.filename))
@@ -33,6 +33,10 @@ def upload_file():
         else:
             return jsonify({'error': ' image resolution has to be greater than 512x512'})
     return jsonify({'error': 'Invalid file type'})
+
+
+
+
 
 
 
