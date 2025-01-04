@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
 import os
 from PIL import Image
-from models import ClothingClassifier
-from database import add_clothing_items, get_all_clothes, get_clothes_by_category
+from .models import classifier
+from .database import add_clothing_items, get_all_clothes, get_clothes_by_category
 
 
 bp = Blueprint('main', __name__)
@@ -33,7 +33,7 @@ def upload_file():
         if width < 512 and height < 512:
             return jsonify({'error': 'Bad Resolution'})
         try:
-            detected_items = ClothingClassifier.process_image(img)
+            detected_items = classifier.process_image(img)
             saved_items = add_clothing_items(detected_items)
 
             return jsonify({

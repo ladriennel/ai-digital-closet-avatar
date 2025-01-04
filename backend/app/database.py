@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 
@@ -13,7 +13,7 @@ def add_clothing_items(detected_items: list) -> list:
     """
     # Add timestamp to each item
     for item in detected_items:
-        item['created_at'] = datetime()
+        item['created_at'] = datetime.now(timezone.utc)
     
     # Insert into MongoDB
     result = db.clothes.insert_many(detected_items)

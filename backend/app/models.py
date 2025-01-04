@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from ultralytics import YOLO
 import os
+import uuid
 
 class ClothingClassifier:
     def __init__(self):
@@ -12,7 +13,7 @@ class ClothingClassifier:
         self.model = AutoModelForZeroShotImageClassification.from_pretrained("patrickjohncyh/fashion-clip")
         self.model.eval()
 
-        self.detector = YOLO("yolov8.pt")
+        self.detector = YOLO("yolov8n.pt")
 
         self.categories = {
             'tops': {
@@ -74,7 +75,9 @@ class ClothingClassifier:
                 classification = self._classify_item(pil_crop)
                 
                 if classification:
-                    save_path = os.path.join('uploads/crops', f"{len(detected_items)}.jpg")
+                    item_uuid = str(uuid.uuid4())
+                    filename = f"{item_uuid}.jpg"
+                    save_path = os.path.join('uploads/crops', filename)
                     os.makedirs(os.path.dirname(save_path), exist_ok=True)
                     cv2.imwrite(save_path, cropped_img)
                     
@@ -100,7 +103,7 @@ class ClothingClassifier:
                 )
                 
                 with torch.no_grad():
-                    outputs = self.model(inputs)
+                    outputs = self.model(**inputs)
                     probs = outputs.logits_per_image.softmax(dim=1)[0]
                     confidence = torch.max(probs).item()
                     
@@ -125,7 +128,7 @@ class ClothingClassifier:
                 )
                 
                 with torch.no_grad():
-                    style_outputs = self.model(style_inputs)
+                    style_outputs = self.model(**style_inputs)
                     style_probs = style_outputs.logits_per_image.softmax(dim=1)[0]
                     style_idx = torch.argmax(style_probs).item()
                     
@@ -134,9 +137,9 @@ class ClothingClassifier:
                         'confidence': float(style_probs[style_idx])
                     }
 
-            return final_classification if best_confidence > 0.3 else None
+            return final_classification if best_confidence > 0.25 else None
     
-
+classifier = ClothingClassifier()
 
         
         
