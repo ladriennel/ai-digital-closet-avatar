@@ -68,8 +68,9 @@ class ClothingClassifier:
             boxes = result.boxes
             for box in boxes:
                 x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())
-                cropped_img = cv2_image[y1:y2, x1:x2]
                 
+                cropped_img = self.add_Buffer(cv2_image, cv2_image[y1:y2, x1:x2], (x1,y1,x2,y2))
+
                 pil_crop = Image.fromarray(cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB))
                 
                 classification = self._classify_item(pil_crop)
@@ -80,11 +81,14 @@ class ClothingClassifier:
                     save_path = os.path.join('uploads/crops', filename)
                     os.makedirs(os.path.dirname(save_path), exist_ok=True)
                     cv2.imwrite(save_path, cropped_img)
-                    
                     detected_items.append({
                         'classification': classification,
                         'crop_path': save_path
                     })
+
+        
+        if not detected_items:
+            print("No clothing items detected!")
 
         return detected_items
 
@@ -106,7 +110,7 @@ class ClothingClassifier:
                     outputs = self.model(**inputs)
                     probs = outputs.logits_per_image.softmax(dim=1)[0]
                     confidence = torch.max(probs).item()
-                    
+                    print(inputs)
                     if confidence > best_confidence:
                         best_confidence = confidence
                         best_category = category
@@ -136,8 +140,27 @@ class ClothingClassifier:
                         'name': self.categories[best_category]['styles'][style_idx],
                         'confidence': float(style_probs[style_idx])
                     }
-
+            print(best_confidence)
             return final_classification if best_confidence > 0.25 else None
+    
+    def add_Buffer(self, orginal_image, crop_image, crop_box):
+       
+        original_height, original_width, _ = orginal_image.shape
+        crop_width, crop_height = crop_image.size
+        left, upper, right, lower = crop_box
+
+        buffer_width = int(crop_width * .2)
+        buffer_height = int(crop_height * .2)
+
+        left = max(0, left - buffer_width)
+        upper = max(0, upper - buffer_height)
+        right = min(original_width, right + buffer_width)
+        lower = min(original_height, lower + buffer_height)
+
+        return orginal_image[upper:lower, left:right]
+
+
+        
     
 classifier = ClothingClassifier()
 
@@ -152,11 +175,3 @@ classifier = ClothingClassifier()
     
 
     
-
-
-
-
-
-
-
-
