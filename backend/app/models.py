@@ -63,7 +63,7 @@ class ClothingClassifier:
 
         results = self.detector(cv2_image)
         detected_items = []
-
+        
         for result in results:
             boxes = result.boxes
             for box in boxes:
@@ -87,9 +87,6 @@ class ClothingClassifier:
                     })
 
         
-        if not detected_items:
-            print("No clothing items detected!")
-
         return detected_items
 
 
@@ -110,7 +107,6 @@ class ClothingClassifier:
                     outputs = self.model(**inputs)
                     probs = outputs.logits_per_image.softmax(dim=1)[0]
                     confidence = torch.max(probs).item()
-                    print(inputs)
                     if confidence > best_confidence:
                         best_confidence = confidence
                         best_category = category
@@ -140,13 +136,12 @@ class ClothingClassifier:
                         'name': self.categories[best_category]['styles'][style_idx],
                         'confidence': float(style_probs[style_idx])
                     }
-            print(best_confidence)
             return final_classification if best_confidence > 0.25 else None
     
     def add_Buffer(self, orginal_image, crop_image, crop_box):
        
         original_height, original_width, _ = orginal_image.shape
-        crop_width, crop_height = crop_image.size
+        crop_height, crop_width, _  = crop_image.shape
         left, upper, right, lower = crop_box
 
         buffer_width = int(crop_width * .2)
