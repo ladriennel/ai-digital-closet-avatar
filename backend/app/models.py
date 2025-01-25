@@ -6,6 +6,7 @@ from PIL import Image
 from ultralytics import YOLO
 import os
 import uuid
+from pymatting import estimate_alpha_cf
 
 class ClothingClassifier:
     def __init__(self):
@@ -69,18 +70,22 @@ class ClothingClassifier:
             for box in boxes:
                 x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())
                 
+                # cropped_img = cv2_image[y1:y2, x1:x2]
+                
                 cropped_img = self.add_Buffer(cv2_image, cv2_image[y1:y2, x1:x2], (x1,y1,x2,y2))
 
-                pil_crop = Image.fromarray(cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB))
-                
+                rgba = self.remove_background_grabcut(cropped_img)
+
+                pil_crop = Image.fromarray(cv2.cvtColor(rgba, cv2.COLOR_BGRA2RGBA))
+
                 classification = self._classify_item(pil_crop)
                 
                 if classification:
                     item_uuid = str(uuid.uuid4())
-                    filename = f"{item_uuid}.jpg"
+                    filename = f"{item_uuid}.png"
                     save_path = os.path.join('uploads/crops', filename)
                     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                    cv2.imwrite(save_path, cropped_img)
+                    cv2.imwrite(save_path, rgba)
                     detected_items.append({
                         'classification': classification,
                         'crop_path': save_path
@@ -153,10 +158,40 @@ class ClothingClassifier:
         lower = min(original_height, lower + buffer_height)
 
         return orginal_image[upper:lower, left:right]
+    
+    def remove_background_grabcut(self, image):
+        # Create a mask
+        mask = np.zeros(image.shape[:2], np.uint8)
+        
+        # Get image dimensions
+        height, width = image.shape[:2]
+        
+        # Create rectangle for initial guess
+        # Make it slightly smaller than the image to avoid edge artifacts
+        rect = (5, 5, width-5, height-5)
+        
+        # Initialize background and foreground models
+        bgd_model = np.zeros((1,65), np.float64)
+        fgd_model = np.zeros((1,65), np.float64)
+        
+        # Run grabcut
+        cv2.grabCut(image, mask, rect, bgd_model, fgd_model, 5, cv2.GC_INIT_WITH_RECT)
+        
+        # Create mask where sure and likely foreground are 1, rest is 0
+        mask2 = np.where((mask==2)|(mask==0), 0, 1).astype('uint8')
+        
+        # Convert to RGBA
+        rgba = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+        
+        # Set alpha channel based on mask
+        rgba[:, :, 3] = mask2 * 255
+        
+        return rgba
+
+
 
 
         
-    
 classifier = ClothingClassifier()
 
         
