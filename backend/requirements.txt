@@ -50,7 +50,6 @@ pooch==1.8.2
 protobuf==5.29.3
 psutil==6.1.1
 py-cpuinfo==9.0.0
-PyMatting==1.1.13
 pymongo==4.10.1
 pyparsing==3.2.1
 python-dateutil==2.9.0.post0
