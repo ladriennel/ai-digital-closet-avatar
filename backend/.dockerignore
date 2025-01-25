@@ -1,0 +1,9 @@
+# Exclude virtual environments
+.venv/
+# Exclude Python cache
+__pycache__/
+*.pyc
+# Exclude git-specific files
+.git
+.gitignore
+# If you have other files/folders not needed, exclude them as well
