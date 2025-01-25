@@ -6,7 +6,6 @@ from PIL import Image
 from ultralytics import YOLO
 import os
 import uuid
-from pymatting import estimate_alpha_cf
 
 class ClothingClassifier:
     def __init__(self):
@@ -188,10 +187,7 @@ class ClothingClassifier:
         
         return rgba
 
-
-
-
-        
+   
 classifier = ClothingClassifier()
 
         
