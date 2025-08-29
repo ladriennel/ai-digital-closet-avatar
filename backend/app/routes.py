@@ -28,6 +28,7 @@ def upload_file():
         return jsonify({'error': 'No selected file'})
     if file and allowed_file(file.filename):
         # check file res
+        file.seek(0)  # Reset file pointer to beginning
         img = Image.open(file)
         width, height = img.size
         if width < 512 and height < 512:

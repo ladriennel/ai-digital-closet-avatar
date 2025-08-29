@@ -1,11 +1,15 @@
 from pymongo import MongoClient
 from datetime import datetime, timezone
 from bson import ObjectId
+import os
+from dotenv import load_dotenv
 
-client = MongoClient('mongodb://mongodb:27017/')
-#client = MongoClient('mongodb://localhost:27017/')
+load_dotenv()
 
-db = client.digicloset  # This creates/uses a database named 'digicloset'
+mongodb_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+client = MongoClient(mongodb_uri) 
+
+db = client.digicloset  
 
 def add_clothing_items(detected_items: list) -> list:
     """
