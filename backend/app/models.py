@@ -6,11 +6,16 @@ from PIL import Image
 from ultralytics import YOLO
 import os
 import uuid
+import platform
 
 class ClothingClassifier:
     def __init__(self):
+        # Set up device compatibility for different platforms
+        self.device = self._get_optimal_device()
+        
         self.processor = AutoProcessor.from_pretrained("patrickjohncyh/fashion-clip")
         self.model = AutoModelForZeroShotImageClassification.from_pretrained("patrickjohncyh/fashion-clip")
+        self.model.to(self.device)
         self.model.eval()
 
         self.detector = YOLO("yolov8n.pt")
@@ -58,12 +63,21 @@ class ClothingClassifier:
             }
         }
 
+    def _get_optimal_device(self):
+        """Determine the best available device for the current platform."""
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            # Apple Silicon MPS support
+            return torch.device("mps")
+        else:
+            return torch.device("cpu")
+
     def process_image(self, image): # image is coming from routes
         cv2_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR) 
 
         results = self.detector(cv2_image)
         detected_items = []
-        
         for result in results:
             boxes = result.boxes
             for box in boxes:
@@ -79,18 +93,28 @@ class ClothingClassifier:
 
                 classification = self._classify_item(pil_crop)
                 
-                if classification:
-                    item_uuid = str(uuid.uuid4())
-                    filename = f"{item_uuid}.png"
-                    save_path = os.path.join('uploads/crops', filename)
-                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                    cv2.imwrite(save_path, rgba)
-                    detected_items.append({
-                        'classification': classification,
-                        'crop_path': save_path
-                    })
+                print("classificiation:", classification)
 
-        
+                item_uuid = str(uuid.uuid4())
+                filename = f"{item_uuid}.png"
+                save_path = os.path.join('uploads/crops', filename)
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                cv2.imwrite(save_path, rgba)
+                detected_items.append({
+                    'classification': classification,
+                    'crop_path': save_path
+                })
+                #if classification:
+                    #item_uuid = str(uuid.uuid4())
+                    #filename = f"{item_uuid}.png"
+                    #save_path = os.path.join('uploads/crops', filename)
+                    #os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    #cv2.imwrite(save_path, rgba)
+                   # detected_items.append({
+                    #    'classification': classification,
+                    #    'crop_path': save_path
+                   # })
+        print(classification)
         return detected_items
 
 
@@ -106,7 +130,8 @@ class ClothingClassifier:
                     return_tensors="pt",
                     padding=True
                 )
-                
+                # Move inputs to the same device as model
+                inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 with torch.no_grad():
                     outputs = self.model(**inputs)
                     probs = outputs.logits_per_image.softmax(dim=1)[0]
@@ -130,7 +155,8 @@ class ClothingClassifier:
                     return_tensors="pt",
                     padding=True
                 )
-                
+                # Move inputs to the same device as model
+                style_inputs = {k: v.to(self.device) for k, v in style_inputs.items()}
                 with torch.no_grad():
                     style_outputs = self.model(**style_inputs)
                     style_probs = style_outputs.logits_per_image.softmax(dim=1)[0]

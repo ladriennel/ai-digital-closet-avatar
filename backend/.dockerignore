@@ -6,4 +6,3 @@ __pycache__/
 # Exclude git-specific files
 .git
 .gitignore
-# If you have other files/folders not needed, exclude them as well
