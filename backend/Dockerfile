@@ -1,11 +1,16 @@
-FROM python:3.11-slim
+# Use platform-specific base image for better compatibility
+FROM --platform=linux/arm64 python:3.11-slim
 
+# Install system dependencies for OpenCV and other packages
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender1
+    libxrender1 \
+    libgthread-2.0-0 \
+    libgtk-3-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create a working directory inside the container
 WORKDIR /app
